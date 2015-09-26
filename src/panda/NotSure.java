@@ -7,7 +7,6 @@ public class NotSure {
     public void clear() {
         data.clear();
     }
-
     public boolean maybe(long l) {
         return data.get(Murmur3.hashLong(l) & mask);
     }

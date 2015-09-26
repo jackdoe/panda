@@ -11,29 +11,36 @@ public class KV {
     StoredLongArray keys;
     StoredLongArray offsets;
     StoredLongArray values;
+    NotSure not_sure;
+
     public KV(String path) throws Exception {
         keys = new StoredLongArray(path + ".keys");
         values = new StoredLongArray(path + ".values");
         offsets = new StoredLongArray(path + ".offsets");
+        not_sure = new NotSure();
     }
 
     public long get_single(long key) {
-        int idx = keys.bsearch(key);
-        if (idx >= 0) {
-            long value_range = offsets.get(idx);
-            int from = (int)(value_range >> 32);
-            return values.get(from);
+        if (not_sure.maybe(key)) {
+            int idx = keys.bsearch(key);
+            if (idx >= 0) {
+                long value_range = offsets.get(idx);
+                int from = (int)(value_range >> 32);
+                return values.get(from);
+            }
         }
         return NO_MORE;
     }
 
     public long[] get(long key) {
-        int idx = keys.bsearch(key);
-        if (idx >= 0) {
-            long value_range = offsets.get(idx);
-            int from = (int)(value_range >> 32);
-            int len   = (int)(value_range & 0xFFFFFFFF);
-            return values.slice(from,len);
+        if (not_sure.maybe(key)) {
+            int idx = keys.bsearch(key);
+            if (idx >= 0) {
+                long value_range = offsets.get(idx);
+                int from = (int)(value_range >> 32);
+                int len   = (int)(value_range & 0xFFFFFFFF);
+                return values.slice(from,len);
+            }
         }
         return null;
     }
@@ -47,6 +54,7 @@ public class KV {
         long from = (long) values.append(v);
         offsets.append(from << 32L | 1L);
         keys.append(key);
+        not_sure.add(key);
     }
 
     public void append(long key, long[] v) {
@@ -59,6 +67,7 @@ public class KV {
             long from = (long) values.append(v,off,len);
             offsets.append(from << 32L | len);
             keys.append(key);
+            not_sure.add(key);
         }
     }
 
@@ -115,6 +124,7 @@ public class KV {
     }
 
     void reset() {
+        not_sure.clear();
         keys.reset();
         offsets.reset();
         values.reset();
@@ -125,9 +135,14 @@ public class KV {
     }
 
     public void reload() throws Exception {
+        not_sure.clear();
         keys.reload();
         offsets.reload();
         values.reload();
+        for (int i = 0; i < keys.length; i++) {
+            long k = keys.get(i);
+            not_sure.add(k);
+        }
     }
     public void forEach(BiConsumer<Long, long[]> consumer) {
         for (int i = 0; i < keys.length; i++) {
