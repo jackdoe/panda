@@ -139,10 +139,8 @@ public class KV {
         keys.reload();
         offsets.reload();
         values.reload();
-        for (int i = 0; i < keys.length; i++) {
-            long k = keys.get(i);
-            not_sure.add(k);
-        }
+        for (int i = 0; i < keys.length; i++)
+            not_sure.add(keys.get(i));
     }
     public void forEach(BiConsumer<Long, long[]> consumer) {
         for (int i = 0; i < keys.length; i++) {
