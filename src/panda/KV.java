@@ -37,9 +37,9 @@ public class KV {
     }
     public void append(long key, long v) {
         validate_key(key);
-        keys.append(key);
         long from = (long) values.append(v);
         offsets.append(from << 32L | 1L);
+        keys.append(key);
     }
 
     public void append(long key, long[] v) {
@@ -49,9 +49,9 @@ public class KV {
     public void append(long key, long[] v,int off, int len) {
         validate_key(key);
         if (len > 0) {
-            keys.append(key);
             long from = (long) values.append(v,off,len);
             offsets.append(from << 32L | len);
+            keys.append(key);
         }
     }
 
