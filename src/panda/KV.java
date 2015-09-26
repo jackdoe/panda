@@ -1,5 +1,10 @@
 package panda;
 import java.util.function.BiConsumer;
+// nothing here is thread safe, but certain assumptions can be made
+// get() is fairly safe, and also you can append() and get() in the same time
+
+// you can not append() from multiple threads, there is no synchronization
+// at all, it is expected the caller to do so.
 public class KV {
     // XXX: bloom
     public static final long NO_MORE = Long.MAX_VALUE;
@@ -11,6 +16,7 @@ public class KV {
         values = new StoredLongArray(path + ".values");
         offsets = new StoredLongArray(path + ".offsets");
     }
+
     public long get_single(long key) {
         int idx = keys.bsearch(key);
         if (idx >= 0) {
@@ -35,6 +41,7 @@ public class KV {
         if (key == NO_MORE)
             throw new RuntimeException("cannot store(reserved) " + key);
     }
+
     public void append(long key, long v) {
         validate_key(key);
         long from = (long) values.append(v);
@@ -112,9 +119,11 @@ public class KV {
         offsets.reset();
         values.reset();
     }
+
     public int count() {
         return keys.length;
     }
+
     public void reload() throws Exception {
         keys.reload();
         offsets.reload();
