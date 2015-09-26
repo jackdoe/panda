@@ -43,14 +43,6 @@ private static final int seed = 0;
 private static final int C1 = 0xcc9e2d51;
 private static final int C2 = 0x1b873593;
 
-public static int hashInt(int input){
-	if(input == 0) return 0;
-	int k1 = mixK1(input);
-	int h1 = mixH1(seed, k1);
-
-	return fmix(h1, 4);
-}
-
 public static int hashLong(long input){
 	if(input == 0) return 0;
 	int low = (int) input;
@@ -63,28 +55,6 @@ public static int hashLong(long input){
 	h1 = mixH1(h1, k1);
 
 	return fmix(h1, 8);
-}
-
-public static int hashUnencodedChars(CharSequence input){
-	int h1 = seed;
-
-	// step through the CharSequence 2 chars at a time
-	for(int i = 1; i < input.length(); i += 2)
-		{
-		int k1 = input.charAt(i - 1) | (input.charAt(i) << 16);
-		k1 = mixK1(k1);
-		h1 = mixH1(h1, k1);
-		}
-
-	// deal with any remaining characters
-	if((input.length() & 1) == 1)
-		{
-		int k1 = input.charAt(input.length() - 1);
-		k1 = mixK1(k1);
-		h1 ^= k1;
-		}
-
-	return fmix(h1, 2 * input.length());
 }
 
 private static int mixK1(int k1){

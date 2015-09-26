@@ -1,7 +1,9 @@
 package panda;
 import java.util.BitSet;
 public class NotSure {
-    public static final int bitset_size = 1 << 20;
+    // works quite ok for 1m random keys, it gave false positive about 5% of the cases
+    // since i intend to use this for about 500k keys, 2mb bitset is good enough
+    public static final int bitset_size = 1 << 24;
     public static final int mask = bitset_size - 1;
     public BitSet data = new BitSet(bitset_size);
     public void clear() {
