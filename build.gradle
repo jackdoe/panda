@@ -1,0 +1,27 @@
+apply plugin: 'java'
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/panda'
+        }
+    }
+    test {
+        java {
+            srcDir 'src/test/panda'
+        }
+    }
+}
+dependencies {
+    testCompile 'junit:junit:4.12'
+}
+
+jar {
+    manifest {
+        attributes("Implementation-Title": "PANDA",
+                   "Implementation-Version": 0)
+    }
+}
