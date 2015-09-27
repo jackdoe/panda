@@ -1,5 +1,9 @@
 package panda;
 import java.util.function.BiConsumer;
+import java.nio.*;
+import java.nio.file.*;
+import java.io.*;
+import java.util.Random;
 // nothing here is thread safe, but certain assumptions can be made
 // get() is fairly safe, and also you can append() and get() in the same time
 
@@ -7,16 +11,44 @@ import java.util.function.BiConsumer;
 // at all, it is expected the caller to do so.
 public class KV {
     // XXX: bloom
+    public static final String SA_KEYS = "sa.keys";
+    public static final String SA_OFFSETS = "sa.offsets";
+    public static final String SA_VALUES = "sa.values";
+
+    public static final FileSystem fs = FileSystems.getDefault();
     public static final long NO_MORE = Long.MAX_VALUE;
     StoredLongArray keys;
     StoredLongArray offsets;
     StoredLongArray values;
     NotSure not_sure;
+    public Path path;
 
-    public KV(String path) throws Exception {
-        keys = new StoredLongArray(path + ".keys");
-        values = new StoredLongArray(path + ".values");
-        offsets = new StoredLongArray(path + ".offsets");
+    public Path create_new_directory() throws Exception {
+        // XXX: FileAlreadyExistsException
+        String s = path.toFile().toString() + "_" + System.nanoTime() + "_" + Math.abs(new Random(System.nanoTime()).nextLong());
+        Path p = fs.getPath(s);
+        Files.createDirectories(p);
+        return p;
+    }
+
+    public Path get_path_for(String from, String suffix) {
+        return fs.getPath(from,suffix);
+    }
+
+    public Path get_path_for(Path from, String suffix) {
+        return get_path_for(from.toFile().toString(),suffix);
+    }
+
+    public KV(String _path) throws Exception {
+        path = fs.getPath(_path);
+        if (!path.toFile().exists()) {
+            Path tmp = create_new_directory();
+            Files.createSymbolicLink(path,tmp);
+        }
+
+        keys = new StoredLongArray(get_path_for(_path,SA_KEYS));
+        values = new StoredLongArray(get_path_for(_path,SA_VALUES));
+        offsets = new StoredLongArray(get_path_for(_path,SA_OFFSETS));
         not_sure = new NotSure();
     }
 
@@ -44,6 +76,7 @@ public class KV {
         }
         return null;
     }
+
     public void validate_key(long key) {
         if (key == NO_MORE)
             throw new RuntimeException("cannot store(reserved) " + key);
@@ -72,9 +105,16 @@ public class KV {
     }
 
     public synchronized void flush() throws Exception {
-        values.flush();
-        offsets.flush();
-        keys.flush(); // must flush keys last, if anything else fails before that, we wont use the keys anyway
+        Path path_tmp = create_new_directory();
+        String s_path_tmp = path_tmp.toFile().toString();
+
+        values.flush(get_path_for(s_path_tmp,SA_KEYS));
+        offsets.flush(get_path_for(s_path_tmp,SA_OFFSETS));
+        keys.flush(get_path_for(s_path_tmp,SA_VALUES));
+
+        Path path_symlink_gen = fs.getPath(path_tmp.toFile().toString() + ".for_symlink");
+        Files.createSymbolicLink(path_symlink_gen,path_tmp);
+        Files.move(path_symlink_gen,path, StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
     }
 
     public KV merge(KV... kvs) throws Exception {
@@ -136,9 +176,9 @@ public class KV {
 
     public void reload() throws Exception {
         not_sure.clear();
-        keys.reload();
-        offsets.reload();
-        values.reload();
+        keys.reload(get_path_for(path,SA_KEYS));
+        offsets.reload(get_path_for(path,SA_OFFSETS));
+        values.reload(get_path_for(path,SA_VALUES));
         for (int i = 0; i < keys.length; i++)
             not_sure.add(keys.get(i));
     }

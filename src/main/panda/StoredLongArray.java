@@ -11,16 +11,12 @@ public class StoredLongArray {
     public long[] buffer;
     public int length;
     public int unsafe_index_iter;
-    Path path;
-    Path path_tmp;
 
-    public StoredLongArray(String _path) throws Exception {
-        path = FileSystems.getDefault().getPath(_path);
-        path_tmp = FileSystems.getDefault().getPath(_path + ".tmp");
-        reload();
+    public StoredLongArray(Path path) throws Exception {
+        reload(path);
     }
 
-    public void reload() throws Exception {
+    public void reload(Path path) throws Exception {
         length = 0;
         try {
             byte[] bytes = Files.readAllBytes(path); // XXX: reader
@@ -29,13 +25,14 @@ public class StoredLongArray {
                 append(abyte_to_long(bytes,i));
         } catch(java.nio.file.NoSuchFileException e) {
             buffer = new long[0];
-            flush();
         }
-
     }
 
-    public void flush() throws Exception {
-        BufferedOutputStream os = new BufferedOutputStream(Files.newOutputStream(path_tmp,StandardOpenOption.TRUNCATE_EXISTING,StandardOpenOption.WRITE,StandardOpenOption.CREATE));
+    public void flush(Path path) throws Exception {
+        BufferedOutputStream os = new BufferedOutputStream(Files.newOutputStream(path,
+                                                                                 StandardOpenOption.TRUNCATE_EXISTING,
+                                                                                 StandardOpenOption.WRITE,
+                                                                                 StandardOpenOption.CREATE));
         byte[] out = new byte[8];
         for (int i = 0; i < length; i++) {
             out[0] = (byte) (buffer[i] >> 56);
@@ -50,9 +47,8 @@ public class StoredLongArray {
         }
         os.flush();
         os.close();
-
-        Files.move(path_tmp,path, StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
     }
+
     public long get(int idx) { return buffer[idx]; };
     public int bsearch(long key) {
         return Arrays.binarySearch(buffer, 0, length, key);
@@ -116,9 +112,5 @@ public class StoredLongArray {
     public long unsafe_index_iter_next() {
         unsafe_index_iter++;
         return unsafe_index_iter_current();
-    }
-
-    public String toString() {
-        return path.toString() + ":" + length + " [ " + unsafe_index_iter_current() + " ]";
     }
 }
