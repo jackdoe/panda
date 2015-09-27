@@ -85,8 +85,18 @@ public class KV {
     public void append(long key, long v) {
         validate_key(key);
         long from = (long) values.append(v);
-        offsets.append(from << 32L | 1L);
-        keys.append(key);
+
+        long offset_len = from << 32L | 1L;
+        // if the key already exists, just make the offset point to the new value offset
+        // on compaction the old value will be ignored
+
+        int idx;
+        if (not_sure.maybe(key) && (idx = keys.bsearch(key)) >= 0) {
+            offsets.set(idx,offset_len);
+        } else {
+            offsets.append(offset_len);
+            keys.append(key);
+        }
         not_sure.add(key);
     }
 
@@ -105,6 +115,8 @@ public class KV {
     }
 
     public synchronized void flush() throws Exception {
+        Path current = Files.readSymbolicLink(path);
+
         Path path_tmp = create_new_directory();
         String s_path_tmp = path_tmp.toFile().toString();
 
@@ -115,6 +127,11 @@ public class KV {
         Path path_symlink_gen = fs.getPath(path_tmp.toFile().toString() + ".for_symlink");
         Files.createSymbolicLink(path_symlink_gen,path_tmp);
         Files.move(path_symlink_gen,path, StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
+
+        Files.deleteIfExists(get_path_for(current,SA_KEYS));
+        Files.deleteIfExists(get_path_for(current,SA_VALUES));
+        Files.deleteIfExists(get_path_for(current,SA_OFFSETS));
+        Files.delete(current);
     }
 
     public KV merge(KV... kvs) throws Exception {

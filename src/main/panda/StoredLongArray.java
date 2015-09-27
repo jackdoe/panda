@@ -50,6 +50,7 @@ public class StoredLongArray {
     }
 
     public long get(int idx) { return buffer[idx]; };
+    public void set(int idx, long v) { buffer[idx] = v; };
     public int bsearch(long key) {
         return Arrays.binarySearch(buffer, 0, length, key);
     }

@@ -29,16 +29,16 @@ public class MergeTest {
         b.append(7,8);
         assertEquals(8, b.get_single(7));
         b.append(7,10);
-        assertEquals(8, b.get_single(7));
+        assertEquals(10, b.get_single(7));
         b.append(7,11);
-        assertEquals(10, b.get_single(7));
-        b.append(7,12);
-        assertEquals(10, b.get_single(7));
-        b.append(7,12);
         assertEquals(11, b.get_single(7));
+        b.append(7,12);
+        assertEquals(12, b.get_single(7));
+        b.append(7,12);
+        assertEquals(12, b.get_single(7));
         b.append(8,9);
         assertEquals(9, b.get_single(8));
-        assertEquals(6, b.count());
+        assertEquals(2, b.count());
         b.flush();
 
         KV c = new KV("/tmp/KV/ccc");
