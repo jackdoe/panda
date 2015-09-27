@@ -134,6 +134,15 @@ public class KV {
         Files.delete(current);
     }
 
+    public void destroy() throws Exception {
+        Path current = Files.readSymbolicLink(path);
+        Files.deleteIfExists(get_path_for(current,SA_KEYS));
+        Files.deleteIfExists(get_path_for(current,SA_VALUES));
+        Files.deleteIfExists(get_path_for(current,SA_OFFSETS));
+        Files.delete(current);
+        Files.delete(path);
+    }
+
     public KV merge(KV... kvs) throws Exception {
         return merge_into(this,kvs);
     }

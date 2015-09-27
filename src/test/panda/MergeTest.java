@@ -7,8 +7,9 @@ import static org.junit.Assert.assertEquals;
 public class MergeTest {
     @Test
     public void testMerge() throws Exception {	
-        new File("/tmp/KV").mkdir();
-        KV a = new KV("/tmp/KV/aaa");
+        String root = "/tmp/KV_GRADLE_TEST";
+        new File(root).mkdir();
+        KV a = new KV(root + "/aaa");
         a.reset();
         assertEquals(0, a.count());
         a.append(7,4);
@@ -18,12 +19,12 @@ public class MergeTest {
         assertEquals(2, a.count());
         a.flush();
 
-        KV a2 = new KV("/tmp/KV/aaa");
+        KV a2 = new KV(root + "/aaa");
         assertEquals(2, a.count());
         assertEquals(4, a.get_single(7));
         assertEquals(5, a.get_single(9));
 
-        KV b = new KV("/tmp/KV/bbb");
+        KV b = new KV(root + "/bbb");
         b.reset();
         assertEquals(0, b.count());
         b.append(7,8);
@@ -73,5 +74,19 @@ public class MergeTest {
         c.reload();
         assertEquals(11, c.get_single(11));
         assertEquals(5, c.count());
+
+        assertEquals(true, a.path.toFile().exists());
+        a.destroy();
+        assertEquals(false, a.path.toFile().exists());
+
+        assertEquals(true, b.path.toFile().exists());
+        b.destroy();
+        assertEquals(false, b.path.toFile().exists());
+
+        assertEquals(true, c.path.toFile().exists());
+        c.destroy();
+        assertEquals(false, c.path.toFile().exists());
+
+        new File(root).delete();
     }
 }
